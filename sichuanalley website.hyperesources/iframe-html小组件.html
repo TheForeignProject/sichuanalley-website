@@ -1,0 +1,112 @@
+<div class="swipe-hand-container">
+  <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- 垂直滑动引导虚线轨道 -->
+    <line x1="32" y1="10" x2="32" y2="54" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="3 3" stroke-opacity="0.3" stroke-linecap="round" />
+
+    <!-- 动态滑动手势图标（支持上下往复滑动 + 往返双向触碰淡出） -->
+    <g class="swipe-motion-bidirectional">
+      <!-- 手指轻触波纹光圈 -->
+      <circle cx="28" cy="18" r="5" stroke="#ffffff" stroke-width="1" stroke-opacity="0.35" fill="none" class="touch-ripple-bidirectional" />
+      
+      <!-- 手掌与食指轮廓 -->
+      <path d="M28 14V26M28 26V36C28 41 31 45 36 45C41 45 44 41 44 36V28C44 26.5 42.5 25 41 25C39.5 25 38 26.5 38 28M38 28V25C38 23.5 36.5 22 35 22C33.5 22 32 23.5 32 25M32 25V23C32 21.5 30.5 20 29 20C28.5 20 28 20.3 28 20.8M28 14C28 11.5 25 11.5 25 14V34L22 30.5C20.8 29.2 18.8 29.2 17.6 30.4C16.5 31.5 16.5 33.3 17.5 34.5L23 41C26 45 30 47 35 47" 
+            stroke="#ffffff" 
+            stroke-width="2" 
+            stroke-linecap="round" 
+            stroke-linejoin="round" />
+    </g>
+  </svg>
+</div>
+
+<style>
+  .swipe-hand-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: transparent;
+    pointer-events: none !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+  }
+
+  .swipe-hand-container svg {
+    width: 100%;
+    height: 100%;
+    max-width: 64px;
+    max-height: 64px;
+    display: block;
+    overflow: visible;
+  }
+
+  /* 🌟 手势向上滑、再向下滑的往复平滑关键帧 */
+  @keyframes swipe-hand-bidirectional {
+    /* --- 阶段一：从居中点 向上滑出 --- */
+    0% {
+      transform: translateY(0px);
+      opacity: 0;
+    }
+    10% {
+      transform: translateY(0px);
+      opacity: 1;
+    }
+    35% {
+      transform: translateY(-13px);
+      opacity: 1;
+    }
+    45% {
+      transform: translateY(-13px);
+      opacity: 0;
+    }
+
+    /* --- 中间间隙缓冲，平滑归位 --- */
+    50% {
+      transform: translateY(0px);
+      opacity: 0;
+    }
+
+    /* --- 阶段二：从居中点 向下滑出 --- */
+    60% {
+      transform: translateY(0px);
+      opacity: 1;
+    }
+    85% {
+      transform: translateY(13px);
+      opacity: 1;
+    }
+    95% {
+      transform: translateY(13px);
+      opacity: 0;
+    }
+    100% {
+      transform: translateY(0px);
+      opacity: 0;
+    }
+  }
+
+  /* 🌟 手指轻触时的双向涟漪脉冲动效 */
+  @keyframes touch-ripple-bidirectional {
+    /* 阶段一触碰 */
+    0% { transform: scale(0.6); opacity: 0; }
+    12% { transform: scale(1.15); opacity: 0.8; }
+    25% { transform: scale(1.4); opacity: 0; }
+    48% { opacity: 0; }
+
+    /* 阶段二触碰 */
+    52% { transform: scale(0.6); opacity: 0; }
+    62% { transform: scale(1.15); opacity: 0.8; }
+    75% { transform: scale(1.4); opacity: 0; }
+    100% { opacity: 0; }
+  }
+
+  .swipe-motion-bidirectional {
+    animation: swipe-hand-bidirectional 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    transform-origin: center center;
+  }
+
+  .touch-ripple-bidirectional {
+    animation: touch-ripple-bidirectional 2.8s ease-out infinite;
+    transform-origin: 28px 18px;
+  }
+</style>

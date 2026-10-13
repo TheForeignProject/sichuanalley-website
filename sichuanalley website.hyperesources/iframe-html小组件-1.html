@@ -1,0 +1,69 @@
+<div class="mouse-scroll-container">
+  <svg viewBox="0 0 52 84" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <!-- 滚轮内槽遮罩，避免齿纹溢出到外壳 -->
+      <clipPath id="wheel-well-clip">
+        <rect x="21" y="16" width="10" height="24" rx="5" />
+      </clipPath>
+    </defs>
+
+    <!-- 鼠标主体外框 -->
+    <rect x="2" y="2" width="48" height="80" rx="24" stroke="#6a271c" stroke-width="3" />
+    
+    <!-- 滚轮内凹槽轮廓 -->
+    <rect x="21" y="16" width="10" height="24" rx="7" stroke="#6a271c" stroke-width="1.5" stroke-opacity="0.5" />
+
+    <!-- 动态机械齿纹 -->
+    <g clip-path="url(#wheel-well-clip)">
+      <g class="groove-motion">
+        <line x1="23" y1="14" x2="29" y2="14" stroke="#6a271c" stroke-width="2" stroke-linecap="round" />
+        <line x1="23" y1="21" x2="29" y2="21" stroke="#6a271c" stroke-width="2" stroke-linecap="round" />
+        <line x1="23" y1="28" x2="29" y2="28" stroke="#6a271c" stroke-width="2" stroke-linecap="round" />
+        <line x1="23" y1="35" x2="29" y2="35" stroke="#6a271c" stroke-width="2" stroke-linecap="round" />
+        <line x1="23" y1="42" x2="29" y2="42" stroke="#6a271c" stroke-width="2" stroke-linecap="round" />
+      </g>
+    </g>
+  </svg>
+</div>
+
+<style>
+  .mouse-scroll-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: transparent;
+  }
+
+  .mouse-scroll-container svg {
+    width: 100%;
+    height: 100%;
+    max-width: 52px;
+    max-height: 84px;
+    display: block;
+    overflow: visible;
+  }
+
+  /* 齿纹无缝步进下落动画 */
+  @keyframes scroll-grooves-custom {
+    0% {
+      transform: translateY(-7px);
+      opacity: 0;
+    }
+    20% {
+      opacity: 1;
+    }
+    80% {
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(14px);
+      opacity: 0;
+    }
+  }
+
+  .groove-motion {
+    animation: scroll-grooves-custom 1.35s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+  }
+</style>
