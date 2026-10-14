@@ -1,28 +1,20 @@
-# Sichuan Alley Singapore website
+# Sichuan Alley website
 
-Company-owned production repository: `TheForeignProject/sichuanalley-website`. This independent repository imports the working-tree files from the designer's read-only [`wimgshom/sichuanalley-website`](https://github.com/wimgshom/sichuanalley-website); it is not a fork and does not include the designer's Git history.
+This is the production repository for the [Sichuan Alley Singapore website](https://theforeignproject.github.io/sichuanalley-website/). The site is a static Tumult Hype export. A Python standard-library script prepares it for publication; no application build or package installation is needed. A custom domain has not yet been configured.
 
-The current website is at **https://theforeignproject.github.io/sichuanalley-website/**. No custom domain is configured yet. This is a static Tumult Hype export: no npm install, application build or third-party Python package is needed to deploy.
+Pushes to `main` automatically deploy the website to GitHub Pages through [`.github/workflows/deploy-pages.yml`](.github/workflows/deploy-pages.yml). The workflow runs the publishing tests, then [`scripts/prepare_site.py`](scripts/prepare_site.py). Only the prepared `_site/` directory is published: the branded `index.html`, the unchanged `sichuanalley website.hyperesources/` directory, `.nojekyll`, and the root favicon files.
 
-## Accounts and deployment
+For a future designer export, replace `index.html`, `.nojekyll` and the entire `sichuanalley website.hyperesources/` directory with the new export, review the changes, and commit them to `main`. Preserve the generated directory name and structure exactly, including its space: the HTML and Hype scripts refer to those paths.
 
-`TheForeignProject` owns the repository, grants collaborator access, and configures Pages and any future custom domain. `WAusar` authors, commits and pushes website code to `main`. Before committing, check `git var GIT_AUTHOR_IDENT` and `git var GIT_COMMITTER_IDENT`; use an email associated with the personal GitHub account. Before pushing, confirm authentication is `WAusar`. Repository-local Git configuration must not change other projects' identities.
+## Production branding
 
-Pushes to `main` automatically deploy through `.github/workflows/deploy-pages.yml`; manual `workflow_dispatch` is also available. Pages publishing source must remain **GitHub Actions** (`build_type=workflow`). Tests run before `scripts/prepare_site.py`, which prepares `_site/`; only that directory is uploaded and deployed.
+[`site/seo-head.html`](site/seo-head.html) is the source of truth for the production title, Open Graph brand metadata, canonical URL and `WebSite` JSON-LD. The publishing script replaces the export's title and conflicting brand tags without modifying the original export or its page body. Keep this template and `site/icons/` when importing designer updates. If an export includes a `WebSite` entity inside a mixed JSON-LD graph, the script fails explicitly so the graph can be merged deliberately without losing other entities.
 
-## Designer updates and branding
+[`site/icons/`](site/icons/) contains the full original Sichuan Alley logo (`sichuan-alley-logo.svg`), a 96×96 PNG, and an ICO with 16×16, 32×32 and 48×48 versions. Both raster files use the original logo, proportionally centered on the website's `#FCFBF6` background. Icons are published as `favicon.png` and `favicon.ico` in the site's root, independently of the Hype resource directory. Relative favicon links support both the current GitHub Pages project path and a future custom domain.
 
-Import the source `main` at a fixed SHA into a temporary directory; compare additions, deletions and content hashes before copying. Replace `index.html`, `.nojekyll` and the complete `sichuanalley website.hyperesources/` export. Preserve spaces, Chinese filenames, generated scripts, original bytes and line endings. Remove only files known to belong to the previous designer export. Review any new root website assets and explicitly add them to publication staging. Do not copy source history, workflows, or repository-management files over company files.
+## Local verification and preview
 
-Preserve `site/`, `scripts/`, `tests/`, `.github/`, this README and local skill files. Compare raw imported website files with the source using SHA-256, then run the publishing tests. Commit with a `Source-Commit: <full source SHA>` trailer and push using the personal account. If there are no changes, do not make an empty commit. Syncing is manual, without a schedule or upstream push trigger.
-
-`site/seo-head.html` maintains the title **Sichuan Alley Singapore**, Open Graph metadata, canonical URL, favicon links and `WebSite` JSON-LD (alternate name: **Sichuan Alley**). The preparation script replaces conflicting brand tags in the published HTML while preserving the raw export and page body. A `WebSite` entity in a mixed JSON-LD graph requires deliberate merging, rather than deleting unrelated entities.
-
-`site/icons/` stores a byte-for-byte copy of the designer's full `PastedVector.svg` logo and one-time raster exports: a 96×96 PNG and 16/32/48 ICO. The original `#231815` logo is centered on `#FCFBF6`, with its longest dimension limited to 80 pixels in the PNG. They are independent of designer updates. Relative `./favicon.png` and `./favicon.ico` URLs work under both the current project path and a future domain root.
-
-## Local verification
-
-With Python 3.9 or newer, from the repository root:
+Run with Python 3.9 or newer from this repository:
 
 ```sh
 python -m unittest discover -s tests -v
@@ -30,24 +22,10 @@ python scripts/prepare_site.py
 python -m http.server 8000 --directory _site
 ```
 
-Preview http://localhost:8000/. `_site/` is generated output, not a location for hand-maintained files. Preparation replaces the previous output only after validating the required inputs and HTML. Missing resources/icons or malformed homepage structure block publication.
+Open `http://localhost:8000/` to preview the actual published website, including its title and favicon. Viewing the raw export directly still shows the designer's original metadata. Preparation rebuilds only the generated `_site/` directory, removing obsolete files from previous previews. Do not put hand-maintained files there.
 
-After each push, inspect the Actions run associated with that destination SHA. Confirm deployment succeeds and the live homepage matches **prepared `_site/index.html`**, not the raw export. Check both favicons, the generated Hype script, runtime, representative images and Chinese iframe URLs under the encoded `sichuanalley%20website.hyperesources/` path. Hype resources must still match their source bytes. Test desktop/mobile navigation, gallery, two-location reservations and takeaway links. Report upstream problems separately.
+## Google Search follow-up
 
-## Future custom domain
+After a successful Pages deployment, check the homepage and both favicon URLs for HTTP 200 responses and verify the live page's title is `Sichuan Alley Singapore`. Validate the homepage's `WebSite` JSON-LD with [Schema Markup Validator](https://validator.schema.org/).
 
-Once the domain is chosen, use the company account to bind it in this repository's Pages settings **before** changing DNS. Actions-based Pages does not use a committed `CNAME` file. Identify the authoritative DNS provider and existing records first; the domain owner makes DNS changes unless separately authorizing agent access.
-
-For an apex domain, use these GitHub Pages records (TTL 3600 seconds):
-
-| Type | Host | Values |
-| --- | --- | --- |
-| A | `@` | `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153` |
-| AAAA (IPv6) | `@` | `2606:50c0:8000::153`, `2606:50c0:8001::153`, `2606:50c0:8002::153`, `2606:50c0:8003::153` |
-| CNAME | `www` (or the selected subdomain) | `theforeignproject.github.io` |
-
-Replace only conflicting website records; preserve mail and unrelated DNS. Never put a repository path in the CNAME target. Recheck the [official domain guidance](https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site) at cutover time.
-
-Return to `WAusar` to change canonical, `og:url` and JSON-LD `url` in `site/seo-head.html` to the final HTTPS homepage, commit and deploy. Update this README and the local sync skill's verification URL. With the company account, enable HTTPS enforcement when the certificate is ready; verify HTTPS, redirects and resources, and finish with the personal account selected.
-
-Google does not support independent [site names](https://developers.google.com/search/docs/appearance/site-names) for subdirectories, and uses a [favicon per hostname](https://developers.google.com/search/docs/appearance/favicon-in-search). The current project URL verifies browser branding; search branding is assessed after custom-domain launch. The domain owner then verifies Google Search Console and runs **URL Inspection → Test live URL → Request indexing**. Google's final display and recrawl timing are independent of deployment success.
+When a custom domain is connected, update the canonical URL, `og:url` and JSON-LD `url` in `site/seo-head.html`. The domain owner can then use [Google Search Console](https://search.google.com/search-console) to test the live homepage and request indexing. Google does not support independent site names for subdirectories, so search branding is assessed after the custom-domain launch: [site names](https://developers.google.com/search/docs/appearance/site-names), [favicon requirements](https://developers.google.com/search/docs/appearance/favicon-in-search).
