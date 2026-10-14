@@ -35,6 +35,10 @@ class PrepareSiteTests(unittest.TestCase):
         (resources / "sichuanalleywebsite_hype_generated_script.js").write_bytes(b"Hype();\r\n")
         (resources / "photo.jpg").write_bytes(b"original image bytes")
         shutil.copytree(ROOT / "site", self.source / "site")
+        verification = self.source / "site" / "verification"
+        verification.mkdir(exist_ok=True)
+        (verification / "google89d69245d6219e5b.html").write_bytes(
+            b"google-site-verification: google89d69245d6219e5b.html\r\n")
         self.assertTrue(SCRIPT.is_file(), "Publishing script has not been implemented")
         spec = importlib.util.spec_from_file_location("prepare_site", SCRIPT)
         module = importlib.util.module_from_spec(spec)
@@ -59,7 +63,22 @@ class PrepareSiteTests(unittest.TestCase):
             self.assertEqual((self.output / "sichuanalley website.hyperesources" / path.name).read_bytes(), path.read_bytes())
         for name in ("favicon.png", "favicon.ico"):
             self.assertEqual((self.output / name).read_bytes(), (self.source / "site" / "icons" / name).read_bytes())
-        self.assertEqual(set(p.name for p in self.output.iterdir()), {"index.html", "sichuanalley website.hyperesources", "favicon.png", "favicon.ico", ".nojekyll"})
+        self.assertEqual(set(p.name for p in self.output.iterdir()), {"index.html", "sichuanalley website.hyperesources", "favicon.png", "favicon.ico", ".nojekyll", "google89d69245d6219e5b.html"})
+
+    def test_preserves_search_console_verification_without_publishing_private_files(self):
+        verification = self.source / "site" / "verification" / "google89d69245d6219e5b.html"
+        (verification.parent / "private-backup.sql").write_bytes(b"private maintenance file")
+        self.prepare(self.source)
+        self.assertEqual((self.output / verification.name).read_bytes(), verification.read_bytes())
+        self.assertFalse((self.output / "private-backup.sql").exists())
+
+    def test_missing_search_console_verification_preserves_previous_publication(self):
+        self.prepare(self.source)
+        previous = (self.output / "index.html").read_bytes()
+        (self.source / "site" / "verification" / "google89d69245d6219e5b.html").unlink()
+        with self.assertRaisesRegex(ValueError, "google89d69245d6219e5b.html"):
+            self.prepare(self.source)
+        self.assertEqual((self.output / "index.html").read_bytes(), previous)
 
     def test_new_designer_export_keeps_branding_and_removes_stale_assets(self):
         self.prepare(self.source)

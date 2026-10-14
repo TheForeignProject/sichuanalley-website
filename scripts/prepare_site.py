@@ -11,6 +11,7 @@ import sys
 RESOURCES = "sichuanalley website.hyperesources"
 HYPE_SCRIPT = "sichuanalleywebsite_hype_generated_script.js"
 ICONS = ("favicon.png", "favicon.ico")
+VERIFICATION_FILES = ("google89d69245d6219e5b.html",)
 FLAGS = re.IGNORECASE | re.DOTALL
 
 
@@ -76,6 +77,7 @@ def prepare_site(source):
     required = [source / "index.html", source / RESOURCES / HYPE_SCRIPT,
                 source / "site" / "seo-head.html", source / ".nojekyll"]
     required.extend(source / "site" / "icons" / name for name in ICONS)
+    required.extend(source / "site" / "verification" / name for name in VERIFICATION_FILES)
     for path in required:
         if not path.is_file():
             label = "Hype script" if path.name == HYPE_SCRIPT else "required file"
@@ -99,6 +101,8 @@ def prepare_site(source):
     (output / "index.html").write_bytes(published)
     for name in ICONS:
         shutil.copyfile(source / "site" / "icons" / name, output / name)
+    for name in VERIFICATION_FILES:
+        shutil.copyfile(source / "site" / "verification" / name, output / name)
     return output
 
 
