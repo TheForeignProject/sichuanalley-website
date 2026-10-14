@@ -46,11 +46,11 @@ class PrepareSiteTests(unittest.TestCase):
         published = (self.output / "index.html").read_text(encoding="utf-8")
         self.assertEqual(re.findall(r"<title>(.*?)</title>", published), ["Sichuan Alley Singapore"])
         self.assertIn('property="og:site_name" content="Sichuan Alley Singapore"', published)
-        self.assertIn('rel="canonical" href="https://theforeignproject.github.io/sichuanalley-website/"', published)
+        self.assertIn('rel="canonical" href="https://sichuanalley.com.sg/"', published)
         data = json.loads(re.search(r'<script type="application/ld\+json">(.*?)</script>', published, re.S).group(1))
         self.assertEqual(data, {
             "@context": "https://schema.org", "@type": "WebSite",
-            "name": "Sichuan Alley Singapore", "alternateName": "Sichuan Alley", "url": "https://theforeignproject.github.io/sichuanalley-website/",
+            "name": "Sichuan Alley Singapore", "alternateName": "Sichuan Alley", "url": "https://sichuanalley.com.sg/",
         })
         self.assertEqual((self.source / "index.html").read_bytes(), self.original)
         self.assertEqual((self.output / "index.html").read_bytes().split(b"</head>")[1], self.original.split(b"</head>")[1])
