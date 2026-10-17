@@ -10,6 +10,7 @@ import sys
 
 RESOURCES = "sichuanalley website.hyperesources"
 HYPE_SCRIPT = "sichuanalleywebsite_hype_generated_script.js"
+ROUTER_SCRIPT = "hype-hash-router.js"
 ICONS = ("favicon.png", "favicon.ico")
 VERIFICATION_FILES = ("google89d69245d6219e5b.html",)
 FLAGS = re.IGNORECASE | re.DOTALL
@@ -75,7 +76,8 @@ def prepare_site(source):
     source = Path(source).resolve()
     output = source / "_site"
     required = [source / "index.html", source / RESOURCES / HYPE_SCRIPT,
-                source / "site" / "seo-head.html", source / ".nojekyll"]
+                source / "site" / "seo-head.html", source / "site" / ROUTER_SCRIPT,
+                source / ".nojekyll"]
     required.extend(source / "site" / "icons" / name for name in ICONS)
     required.extend(source / "site" / "verification" / name for name in VERIFICATION_FILES)
     for path in required:
@@ -86,7 +88,9 @@ def prepare_site(source):
     # read_bytes preserves the generated export's original line endings.
     original = (source / "index.html").read_bytes().decode("utf-8")
     template = (source / "site" / "seo-head.html").read_bytes().decode("utf-8")
-    published = brand_head(original, template).encode("utf-8")
+    # Register after designer head code and before the generated Hype body script.
+    production_head = template.rstrip() + f'\n<script src="{ROUTER_SCRIPT}"></script>'
+    published = brand_head(original, production_head).encode("utf-8")
     if f"{RESOURCES.replace(' ', '%20')}/{HYPE_SCRIPT}" not in original:
         raise ValueError("Hype script reference is missing from index.html")
 
@@ -98,6 +102,7 @@ def prepare_site(source):
     output.mkdir()
     shutil.copytree(source / RESOURCES, output / RESOURCES)
     shutil.copyfile(source / ".nojekyll", output / ".nojekyll")
+    shutil.copyfile(source / "site" / ROUTER_SCRIPT, output / ROUTER_SCRIPT)
     (output / "index.html").write_bytes(published)
     for name in ICONS:
         shutil.copyfile(source / "site" / "icons" / name, output / name)

@@ -23,7 +23,8 @@ class PrepareSiteTests(unittest.TestCase):
         self.original = (
             b'<!DOCTYPE html>\r\n<html><head><title>sichuanalley website</title>'
             b'<meta name="viewport" content="width=440">'
-            b'<style>body { background: #FCFBF6; }</style></head>\r\n'
+            b'<style>body { background: #FCFBF6; }</style>'
+            b'<script>window.designerReady = true;</script></head>\r\n'
             b'<body><script src="sichuanalley%20website.hyperesources/'
             b'sichuanalleywebsite_hype_generated_script.js?97637"></script>'
             b'<p>Caf\xc3\xa9</p></body></html>\r\n'
@@ -35,6 +36,8 @@ class PrepareSiteTests(unittest.TestCase):
         (resources / "sichuanalleywebsite_hype_generated_script.js").write_bytes(b"Hype();\r\n")
         (resources / "photo.jpg").write_bytes(b"original image bytes")
         shutil.copytree(ROOT / "site", self.source / "site")
+        self.router = b'"use strict";\r\nwindow.productionRouter = true;\r\n'
+        (self.source / "site" / "hype-hash-router.js").write_bytes(self.router)
         verification = self.source / "site" / "verification"
         verification.mkdir(exist_ok=True)
         (verification / "google89d69245d6219e5b.html").write_bytes(
@@ -63,7 +66,32 @@ class PrepareSiteTests(unittest.TestCase):
             self.assertEqual((self.output / "sichuanalley website.hyperesources" / path.name).read_bytes(), path.read_bytes())
         for name in ("favicon.png", "favicon.ico"):
             self.assertEqual((self.output / name).read_bytes(), (self.source / "site" / "icons" / name).read_bytes())
-        self.assertEqual(set(p.name for p in self.output.iterdir()), {"index.html", "sichuanalley website.hyperesources", "favicon.png", "favicon.ico", ".nojekyll", "google89d69245d6219e5b.html"})
+        self.assertEqual(set(p.name for p in self.output.iterdir()), {"index.html", "sichuanalley website.hyperesources", "favicon.png", "favicon.ico", ".nojekyll", "google89d69245d6219e5b.html", "hype-hash-router.js"})
+
+    def test_publishes_router_once_at_end_of_head_before_generated_hype_script(self):
+        self.prepare(self.source)
+        self.prepare(self.source)
+        published = (self.output / "index.html").read_bytes()
+        router_tag = b'<script src="hype-hash-router.js"></script>'
+        self.assertEqual(published.count(router_tag), 1)
+        head, body = published.split(b"</head>", 1)
+        self.assertTrue(head.rstrip().endswith(router_tag))
+        self.assertLess(head.index(b"window.designerReady"), head.index(router_tag))
+        self.assertIn(b"sichuanalleywebsite_hype_generated_script.js", body)
+        self.assertEqual((self.output / "hype-hash-router.js").read_bytes(), self.router)
+        self.assertEqual((self.source / "site" / "hype-hash-router.js").read_bytes(), self.router)
+        self.assertEqual((self.source / "index.html").read_bytes(), self.original)
+        self.assertEqual(body, self.original.split(b"</head>", 1)[1])
+
+    def test_missing_router_preserves_every_file_of_previous_publication(self):
+        self.prepare(self.source)
+        previous = {path.relative_to(self.output): path.read_bytes()
+                    for path in self.output.rglob("*") if path.is_file()}
+        (self.source / "site" / "hype-hash-router.js").unlink()
+        with self.assertRaisesRegex(ValueError, "hype-hash-router.js"):
+            self.prepare(self.source)
+        self.assertEqual({path.relative_to(self.output): path.read_bytes()
+                          for path in self.output.rglob("*") if path.is_file()}, previous)
 
     def test_preserves_search_console_verification_without_publishing_private_files(self):
         verification = self.source / "site" / "verification" / "google89d69245d6219e5b.html"
@@ -90,6 +118,9 @@ class PrepareSiteTests(unittest.TestCase):
         (self.source / "index.html").write_bytes(self.original.replace(b"sichuanalley website", b"new designer export"))
         self.prepare(self.source)
         self.assertIn("<title>Sichuan Alley Singapore</title>", (self.output / "index.html").read_text())
+        self.assertEqual((self.output / "index.html").read_bytes().count(
+            b'<script src="hype-hash-router.js"></script>'), 1)
+        self.assertEqual((self.output / "hype-hash-router.js").read_bytes(), self.router)
         self.assertFalse((self.output / "stale.txt").exists())
         self.assertFalse((self.output / "sichuanalley website.hyperesources" / "photo.jpg").exists())
         self.assertEqual((self.output / "sichuanalley website.hyperesources" / "new folder" / "新菜单.html").read_bytes(), added.read_bytes())
