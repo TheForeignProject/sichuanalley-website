@@ -17,11 +17,13 @@ function browser(hash = '', options = {}) {
     readyState: options.loading ? 'loading' : 'complete',
     currentScript: { getAttribute: name => attributes[name] || null },
     documentElement: { scrollTop: 200 }, body: { scrollTop: 200 },
+    getElementById: id => options.elements && options.elements[id],
   };
   const window = {
     location: { hash }, HYPE_eventListeners: [],
     addEventListener(type, listener) { (events[type] ||= []).push(listener); },
-    scrollTo() { scrolls++; },
+    pageYOffset: 200,
+    scrollTo(...args) { scrolls++; window.lastScroll = args; },
     setTimeout(fn) { tasks.push(fn); },
   };
   function lifecycle(type) {
@@ -36,7 +38,10 @@ function browser(hash = '', options = {}) {
   }
   const api = {
     sceneNames: () => scenes.slice(), currentSceneName: () => current,
+    currentSceneId: () => 'current-scene',
+    functions: () => options.functions || {},
     kSceneTransitionInstant: 0,
+    kSceneTransitionCrossfade: 1,
     showSceneNamed(target) {
       if (transitioning || !scenes.includes(target)) return;
       calls.push(target); order.push('show:' + target);
@@ -81,6 +86,53 @@ test('direct deep link displays its scene instead of loading home first', () => 
   const b = browser('#menu'); b.start();
   assert.deepEqual(b.calls, ['menu']); assert.equal(b.current, 'menu');
   assert.equal(b.scrolls, 1);
+});
+
+test('location links scroll within the active breakpoint rather than hidden desktop IDs', () => {
+  for (const [name, label, classTarget] of [
+    ['FarEast', 'FAR EAST SQUARE', true], ['Capitol', 'CAPITOL SINGAPORE', false],
+  ]) {
+    const target = { textContent: label + 'RESERVE NOW', getBoundingClientRect: () => ({ top: 600, width: 400, height: 400 }) };
+    const button = { textContent: 'RESERVE NOW', parentElement: target };
+    const scene = { querySelector: () => classTarget ? target : null, querySelectorAll: () => [button] };
+    target.parentElement = scene;
+    const functions = { ['scrollTo' + name]() {} };
+    const b = browser('', { functions, elements: {
+      'current-scene': scene,
+      'section-fareast': { getBoundingClientRect: () => ({ top: 0 }) },
+      'section-capitol': { getBoundingClientRect: () => ({ top: 0 }) },
+    } });
+    b.start(); let stopped = false;
+    functions['scrollTo' + name](b.api, {}, { stopPropagation() { stopped = true; } });
+    b.flush();
+    assert.equal(b.current, 'location'); assert.equal(stopped, true);
+    assert.equal(b.window.location.hash, '', 'section links retain designer scene-only navigation');
+    assert.equal(b.window.lastScroll[0].top, 760);
+  }
+});
+
+test('desktop section anchors keep their original offset', () => {
+  const target = { getBoundingClientRect: () => ({ top: 350, width: 437, height: 437 }) };
+  const functions = { scrollToFarEast() {} };
+  const b = browser('', { functions, elements: { 'current-scene': { querySelector: () => target } } });
+  b.start(); functions.scrollToFarEast(b.api, {}, null); b.flush();
+  assert.equal(b.window.lastScroll[0].top, 510);
+});
+
+test('leaving location before its delayed section scroll prevents stale scrolling', () => {
+  const functions = { scrollToFarEast() {} };
+  const b = browser('', { functions }); b.start();
+  functions.scrollToFarEast(b.api, {}, null); b.api.showSceneNamed('menu');
+  const before = b.scrolls; b.flush(); assert.equal(b.scrolls, before);
+});
+
+test('rapid location requests scroll only to the latest section', () => {
+  const functions = { scrollToFarEast() {}, scrollToCapitol() {} };
+  const target = { getBoundingClientRect: () => ({ top: 600, width: 400, height: 400 }) };
+  const b = browser('', { functions, elements: { 'current-scene': { querySelector: () => target } } });
+  b.start(); const before = b.scrolls;
+  functions.scrollToFarEast(b.api, {}, null); functions.scrollToCapitol(b.api, {}, null);
+  b.flush(); assert.equal(b.scrolls, before + 1);
 });
 
 test('empty and explicit home addresses retain normal Hype initialization', () => {

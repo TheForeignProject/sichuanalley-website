@@ -15,6 +15,49 @@
   var lastHash = window.location.hash;
   var pageShown = document.readyState === 'complete';
 
+  function installLocationLinks(api) {
+    if (typeof api.functions !== 'function') return;
+    var functions = api.functions();
+    var latestRequest = 0;
+    [['FarEast', 'section-fareast', 'FAR EAST SQUARE'],
+      ['Capitol', 'section-capitol', 'CAPITOL SINGAPORE']].forEach(function (route) {
+      var name = 'scrollTo' + route[0];
+      if (typeof functions[name] !== 'function') return;
+      functions[name] = function (documentApi, element, event) {
+        var requestId = ++latestRequest;
+        if (event) event.stopPropagation();
+        documentApi.showSceneNamed('location', documentApi.kSceneTransitionCrossfade, 0.3);
+        window.setTimeout(function () {
+          if (requestId !== latestRequest || documentApi.currentSceneName() !== 'location') return;
+          var scene = document.getElementById(documentApi.currentSceneId());
+          if (!scene) return;
+          // The export assigns section IDs only to the desktop layout. Scope
+          // lookup to the active scene, using the mobile class or location group.
+          var target = scene.querySelector('#' + route[1] + ', .' + route[1]);
+          if (!target) {
+            var buttons = scene.querySelectorAll('[role="button"]');
+            for (var i = 0; i < buttons.length && !target; i++) {
+              if (buttons[i].textContent.trim() !== 'RESERVE NOW') continue;
+              var parent = buttons[i].parentElement;
+              while (parent && parent !== scene) {
+                var other = route[0] === 'FarEast' ? 'CAPITOL SINGAPORE' : 'FAR EAST SQUARE';
+                if (parent.textContent.indexOf(route[2]) >= 0 && parent.textContent.indexOf(other) < 0) {
+                  target = parent; break;
+                }
+                parent = parent.parentElement;
+              }
+            }
+          }
+          var rect = target && target.getBoundingClientRect();
+          if (rect && rect.width > 0 && rect.height > 0) window.scrollTo({
+            top: rect.top + window.pageYOffset - 40,
+            behavior: 'instant'
+          });
+        }, 320);
+      };
+    });
+  }
+
   function sceneFor(rawHash) {
     var names = hype.sceneNames();
     var name;
@@ -78,6 +121,7 @@
     // their own window. Bind the callback's API instead of a generated name.
     if (hype) return;
     hype = api;
+    installLocationLinks(api);
     busy = true;
     var target = sceneFor(window.location.hash);
     if (target) request(true);
